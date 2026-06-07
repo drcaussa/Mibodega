@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mi Bodega">
+<title>🍷 Mi Bodega</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#080604;font-family:Georgia,serif;color:#f0e6cc;min-height:100vh}
+input,select,textarea,button{font-family:Georgia,serif;font-size:14px}
+input,select,textarea{width:100%;background:#0a0804;border:1px solid #2e1f08;border-radius:6px;color:#f0e6cc;padding:11px 14px;outline:none;transition:border-color 0.2s}
+input:focus,select:focus,textarea:focus{border-color:#c9a84c}
+select option{background:#130e07}
+textarea{resize:vertical;min-height:80px}
+button{cursor:pointer;border-radius:6px;padding:10px 18px;font-weight:700;border:none;transition:opacity 0.15s}
+button:active{opacity:0.7}
+.btn-gold{background:#c9a84c;color:#000}
+.btn-ghost{background:transparent;color:#f0e6cc;border:1px solid #2e1f08}
+.btn-blue{background:#1a2e4a;color:#5b9bd5;border:1px solid #5b9bd5}
+.btn-red{background:transparent;color:#c0392b;border:1px solid #c0392b}
+.btn-purple{background:transparent;color:#9b59b6;border:1px solid #9b59b6}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center;padding:12px}
+.modal-overlay.open{display:flex}
+.modal-box{background:#130e07;border:1px solid #2e1f08;border-radius:10px;padding:24px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto}
+.modal-box.wide{max-width:680px}
+.card{background:#130e07;border:1px solid #2e1f08;border-radius:8px;padding:14px;cursor:pointer;transition:all 0.15s;border-left:3px solid #555}
+.card:hover,.card:active{background:#1c1509}
+.label{display:block;color:#6a5020;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
+.field{margin-bottom:13px}
+.badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:1.5px;padding:2px 8px;border-radius:3px;text-transform:uppercase;color:#fff}
+.qty-wrap{display:flex;align-items:center;border:1px solid #2e1f08;border-radius:6px;overflow:hidden;width:fit-content}
+.qty-btn{background:#0a0804;border:none;color:#c9a84c;width:46px;height:46px;font-size:22px;cursor:pointer}
+.qty-num{background:#080604;color:#f0e6cc;font-size:18px;font-weight:bold;min-width:60px;text-align:center;line-height:46px;border-left:1px solid #2e1f08;border-right:1px solid #2e1f08}
+.nav-btn{background:transparent;color:#8a7a60;border:none;border-radius:5px;padding:6px 13px;font-size:12px;font-weight:400}
+.nav-btn.active{background:#c9a84c;color:#000;font-weight:700}
+.star{font-size:18px;cursor:pointer;transition:color 0.1s}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #6a5020;border-top:2px solid #c9a84c;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.photo-box{width:90px;height:110px;background:#080604;border:2px dashed #2e1f08;border-radius:6px;cursor:pointer;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:#7a6a50;font-size:11px}
+.photo-box img{width:100%;height:100%;object-fit:cover}
+.rec-bar{border-radius:5px;padding:10px 13px;margin-bottom:12px;font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{flex:1;min-width:100px;background:#130e07;border:1px solid #2e1f08;border-radius:7px;padding:12px 14px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:9px 10px;color:#6a5020;font-weight:700;letter-spacing:1px;text-align:left;text-transform:uppercase;font-size:9px;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #2e1f08}
+tr:hover td{background:rgba(201,168,76,0.05);cursor:pointer}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:#6a5020;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- APP -->
+<div id="app">
+  <!-- HEADER -->
+  <div style="border-bottom:1px solid #2e1f08;position:sticky;top:0;background:#080604;z-index:50">
+    <div style="max-width:980px;margin:0 auto;padding:0 14px;display:flex;align-items:center;justify-content:space-between;height:54px;gap:8px">
+      <div style="display:flex;align-items:baseline;gap:7px;white-space:nowrap">
+        <span style="font-size:20px">🍷</span>
+        <span style="font-size:16px;font-weight:bold;color:#c9a84c">Mi Bodega</span>
+      </div>
+      <nav id="nav" style="display:flex;gap:2px;flex-wrap:wrap;align-items:center">
+        <button class="nav-btn active" onclick="setView('bodega')">Bodega</button>
+        <button class="nav-btn" onclick="setView('lista')">Lista</button>
+        <button class="nav-btn" onclick="setView('vinotecas')">Vinotecas</button>
+        <button class="nav-btn" onclick="setView('stats')">Stats</button>
+        <button id="iaBtn" onclick="openModal('mApi')" style="background:#2e1a0a;color:#e8c97a;border:1px solid #e8c97a44;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;margin-left:4px">🔑 Activar IA</button>
+      </nav>
+    </div>
+  </div>
+
+  <div style="max-width:980px;margin:0 auto;padding:16px 14px">
+    <!-- Banner IA -->
+    <div id="iaBanner" onclick="openModal('mApi')" style="background:#1a1000;border:1px solid #c9a84c44;border-radius:7px;padding:10px 16px;margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🤖</span>
+      <span style="color:#e8c97a;font-weight:700;font-size:13px">Activa la IA: reconocimiento de etiquetas + búsqueda de precios →</span>
+    </div>
+
+    <!-- STATS -->
+    <div id="statsBar" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"></div>
+
+    <!-- VIEWS -->
+    <div id="viewBodega"></div>
+    <div id="viewLista" style="display:none"></div>
+    <div id="viewVinotecas" style="display:none"></div>
+    <div id="viewStats" style="display:none"></div>
+  </div>
+</div>
+
+<!-- MODALES -->
+<div id="mApi" class="modal-overlay" onclick="closeIfOverlay(event,'mApi')">
+  <div class="modal-box">
+    <h2 style="color:#c9a84c;margin:0 0 14px;font-size:16px">🔑 Activar IA</h2>
+    <p style="color:#8a7a60;font-size:13px;line-height:1.8;margin-bottom:14px">
+      Necesitas una <strong style="color:#f0e6cc">API key gratuita de Anthropic</strong>:<br>
+      <ol style="margin:8px 0 0 18px;color:#8a7a60">
+        <li>Ve a <strong style="color:#e8c97a">console.anthropic.com</strong></li>
+        <li>Crea una cuenta (gratis)</li>
+        <li>Toca <strong style="color:#e8c97a">Compilar → API Keys</strong></li>
+        <li>Crea una clave y cópiala entera</li>
+        <li>Pégala aquí abajo</li>
+      </ol>
+    </p>
+    <div class="field"><label class="label">API Key (sk-ant-...)</label>
+      <input type="password" id="keyInput" placeholder="sk-ant-api03-...">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-gold" style="flex:1" onclick="saveApiKey()">Guardar y activar</button>
+      <button class="btn-red" id="btnDelKey" style="display:none" onclick="deleteApiKey()">Eliminar</button>
+      <button class="btn-ghost" onclick="closeModal('mApi')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="mVino" class="modal-overlay" onclick="closeIfOverlay(event,'mVino')">
+  <div class="modal-box wide">
+    <h2 id="mVinoTitle" style="color:#c9a84c;margin:0 0 14px;font-size:15px">Añadir vino</h2>
+
+    <!-- Foto -->
+    <div style="background:#0a0804;border:1px solid #2e1f08;border-radius:7px;padding:13px;margin-bottom:13px">
+      <div style="color:#6a5020;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">
+        📷 FOTO DE LA ETIQUETA <span id="iaStatus" style="color:#27ae60"></span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div class="photo-box" id="photoBox" onclick="document.getElementById('fileInput').click()">
+          <span style="font-size:26px">📷</span><span>Subir foto</span>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleImage(event)">
+        <div style="flex:1;font-size:12px;color:#7a6a50;line-height:1.7">
+          <div id="labelMsg">Sube una foto de la etiqueta y la IA rellenará los campos solos.</div>
+          <button onclick="document.getElementById('fileInput').click()" style="margin-top:8px;background:#6a502044;color:#e8c97a;border:1px solid #6a5020;border-radius:4px;padding:6px 13px;font-size:11px;font-weight:400">📷 Seleccionar foto</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2" style="gap:10px;margin-bottom:0">
+      <div class="field" style="grid-column:1/-1"><label class="label">Nombre del vino *</label><input id="fNombre" placeholder="Nombre del vino" oninput="updateRecPreview()"></div>
+      <div class="field"><label class="label">Bodega</label><input id="fBodega" placeholder="Bodega o productor"></div>
+      <div class="field"><label class="label">Añada</label><input id="fAñada" placeholder="Ej: 2022" oninput="updateRecPreview()"></div>
+      <div class="field"><label class="label">Tipo</label>
+        <select id="fTipo" onchange="updateRecPreview()">
+          <option>Tinto</option><option>Blanco</option><option>Rosado</option>
+          <option>Espumoso</option><option>Dulce</option><option>Generoso</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="field"><label class="label">Uva</label><input id="fUva" placeholder="Varietal"></div>
+      <div class="field"><label class="label">Región</label><input id="fRegion" placeholder="Región"></div>
+      <div class="field"><label class="label">País</label><input id="fPais" placeholder="País" value="España"></div>
+    </div>
+
+    <!-- Cantidad -->
+    <div style="background:#0a0f0a;border:1px solid #2e1f08;border-radius:6px;padding:12px 14px;margin-bottom:12px">
+      <div style="color:#6a5020;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">📦 NÚMERO DE BOTELLAS</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="qty-wrap">
+          <button class="qty-btn" onclick="changeCantidad(-1)">−</button>
+          <div class="qty-num" id="cantidadNum">1</div>
+          <button class="qty-btn" onclick="changeCantidad(1)">+</button>
+        </div>
+        <span id="cantidadLabel" style="font-size:13px;color:#27ae60">✅ Stock normal</span>
+      </div>
+    </div>
+
+    <!-- Precio -->
+    <div style="background:#0a0a0f;border:1px solid #2e1f08;border-radius:6px;padding:12px 14px;margin-bottom:12px">
+      <div style="color:#6a5020;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">💰 PRECIO</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <div style="flex:1"><label style="font-size:10px;color:#7a6a50;display:block;margin-bottom:3px">Precio real (€)</label>
+          <input type="number" id="fPrecio" placeholder="0.00" min="0" step="0.01"></div>
+        <div style="flex:1"><label style="font-size:10px;color:#7a6a50;display:block;margin-bottom:3px">Estimado IA (€)</label>
+          <input type="number" id="fPrecioEst" readonly style="opacity:0.6;cursor:not-allowed"></div>
+      </div>
+      <button id="btnBuscarPrecio" class="btn-blue" style="width:100%;font-size:14px;padding:13px" onclick="handlePrice()">🔍 Buscar precio con IA</button>
+      <div id="priceResult" style="display:none;margin-top:8px;padding:8px 10px;background:#1a2e4a44;border-radius:5px;font-size:12px"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="field"><label class="label">Vinoteca</label>
+        <select id="fVinoteca"><option value="">— Sin asignar —</option></select>
+      </div>
+      <div class="field"><label class="label">Posición</label><input id="fPosicion" placeholder="Ej: Estante 2, fila 3"></div>
+      <div class="field"><label class="label">Fecha de compra</label><input type="date" id="fFecha"></div>
+    </div>
+
+    <div id="recPreview" style="display:none;border-radius:5px;padding:9px 13px;margin-bottom:12px;font-size:12px"></div>
+
+    <div class="field"><label class="label">Puntuación</label>
+      <div id="starsInput" style="display:flex;gap:4px;font-size:24px"></div>
+    </div>
+    <div class="field"><label class="label">Notas de cata</label>
+      <textarea id="fNotas" placeholder="Aromas, sabor, maridaje..."></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn-gold" style="flex:1" onclick="saveVino()">Añadir a la bodega</button>
+      <button class="btn-ghost" onclick="closeModal('mVino')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="mDetail" class="modal-overlay" onclick="closeIfOverlay(event,'mDetail')">
+  <div class="modal-box" id="mDetailContent"></div>
+</div>
+
+<div id="mDel" class="modal-overlay" onclick="closeIfOverlay(event,'mDel')">
+  <div class="modal-box">
+    <h3 style="color:#f0e6cc;margin:0 0 10px">¿Eliminar este vino?</h3>
+    <p style="color:#7a6a50;font-size:13px;margin-bottom:16px">Esta acción no se puede deshacer.</p>
+    <div style="display:flex;gap:10px">
+      <button class="btn-red" style="flex:1;background:#7a1515;color:#fff" onclick="confirmDel()">Eliminar</button>
+      <button class="btn-ghost" onclick="closeModal('mDel')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="mVt" class="modal-overlay" onclick="closeIfOverlay(event,'mVt')">
+  <div class="modal-box">
+    <h2 style="color:#c9a84c;margin:0 0 14px;font-size:15px">Nueva Vinoteca</h2>
+    <div class="field"><label class="label">Nombre *</label><input id="vtNombre" placeholder="Ej: Bodega sótano"></div>
+    <div class="field"><label class="label">Descripción</label><input id="vtDesc" placeholder="Ej: 12°C, 60 botellas"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-gold" style="flex:1" onclick="saveVt()">Crear vinoteca</button>
+      <button class="btn-ghost" onclick="closeModal('mVt')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── ESTADO ────────────────────────────────────────────────────────────────────
+let vinos = [];
+let vinotecas = [];
+let apiKey = "";
+let currentView = "bodega";
+let editId = null;
+let delId = null;
+let currentCantidad = 1;
+let currentPuntuacion = 0;
+let currentImagen = "";
+let filterTipo = "Todos";
+let filterVt = "Todas";
+let filterEst = "activo";
+let searchQ = "";
+let detailVino = null;
+
+const TIPOS = ["Tinto","Blanco","Rosado","Espumoso","Dulce","Generoso","Otro"];
+const TCOLOR = {Tinto:"#8b1a1a",Blanco:"#b89a2a",Rosado:"#c0607a",Espumoso:"#4a8ab0",Dulce:"#7a50b0",Generoso:"#8a5020",Otro:"#4a6a4a"};
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+function load() {
+  try {
+    const v = localStorage.getItem("wb_vinos"); if(v) vinos = JSON.parse(v);
+    const vt = localStorage.getItem("wb_vinotecas"); if(vt) vinotecas = JSON.parse(vt);
+    const ak = localStorage.getItem("wb_apikey"); if(ak) { apiKey = ak; updateIaUI(); }
+  } catch(_) {}
+}
+function save() { localStorage.setItem("wb_vinos", JSON.stringify(vinos)); }
+function saveVt() {
+  const n = document.getElementById("vtNombre").value.trim();
+  if(!n) return;
+  vinotecas.push({id: Date.now().toString(), nombre:n, descripcion:document.getElementById("vtDesc").value.trim()});
+  localStorage.setItem("wb_vinotecas", JSON.stringify(vinotecas));
+  document.getElementById("vtNombre").value = "";
+  document.getElementById("vtDesc").value = "";
+  closeModal("mVt");
+  render();
+}
+function deleteVt(id) {
+  vinotecas = vinotecas.filter(v=>v.id!==id);
+  localStorage.setItem("wb_vinotecas", JSON.stringify(vinotecas));
+  render();
+}
+
+// ── API KEY ───────────────────────────────────────────────────────────────────
+function saveApiKey() {
+  const k = document.getElementById("keyInput").value.trim();
+  if(!k.startsWith("sk-")) return alert("La key debe empezar por sk-");
+  apiKey = k;
+  localStorage.setItem("wb_apikey", k);
+  updateIaUI();
+  closeModal("mApi");
+}
+function deleteApiKey() {
+  apiKey = ""; localStorage.removeItem("wb_apikey");
+  document.getElementById("keyInput").value = "";
+  updateIaUI(); closeModal("mApi");
+}
+function updateIaUI() {
+  const btn = document.getElementById("iaBtn");
+  const banner = document.getElementById("iaBanner");
+  const delBtn = document.getElementById("btnDelKey");
+  if(apiKey) {
+    btn.style.background="#1a2e1a"; btn.style.color="#27ae60";
+    btn.style.borderColor="#27ae6044"; btn.textContent="🔑 IA ✓";
+    banner.style.display="none";
+    if(delBtn) delBtn.style.display="";
+  } else {
+    btn.style.background="#2e1a0a"; btn.style.color="#e8c97a";
+    btn.style.borderColor="#e8c97a44"; btn.textContent="🔑 Activar IA";
+    banner.style.display="flex";
+    if(delBtn) delBtn.style.display="none";
+  }
+  document.getElementById("keyInput").value = apiKey;
+}
+
+// ── CONSUMO ───────────────────────────────────────────────────────────────────
+function calcRec(tipo, añada) {
+  if(!añada || isNaN(parseInt(añada))) return null;
+  const age = new Date().getFullYear() - parseInt(añada);
+  const t = tipo || "Tinto";
+  let s="",c="",i="",d="";
+  if(t==="Espumoso"){
+    if(age<2){s="Joven";c="#5b9bd5";i="⏳";d="Déjalo reposar 1-2 años más";}
+    else if(age<6){s="Óptimo";c="#27ae60";i="✅";d="Momento ideal de consumo";}
+    else{s="Pasado";c="#c0392b";i="⚠️";d="Consumir pronto, posible oxidación";}
+  } else if(t==="Blanco"){
+    if(age<1){s="Muy joven";c="#5b9bd5";i="⏳";d="Espera al menos 1 año";}
+    else if(age<4){s="Óptimo";c="#27ae60";i="✅";d="Momento ideal";}
+    else if(age<7){s="Bebible";c="#e8c97a";i="🔔";d="Consume en los próximos 2 años";}
+    else{s="Pasado";c="#c0392b";i="⚠️";d="Posible deterioro";}
+  } else if(t==="Tinto"){
+    if(age<2){s="Muy joven";c="#5b9bd5";i="⏳";d="Necesita más crianza en botella";}
+    else if(age<5){s="Joven";c="#e8c97a";i="🔔";d="Puede mejorar con más tiempo";}
+    else if(age<12){s="Óptimo";c="#27ae60";i="✅";d="Momento ideal de consumo";}
+    else if(age<20){s="Maduro";c="#e8c97a";i="🔔";d="Gran vino maduro, abre pronto";}
+    else{s="Muy maduro";c="#c0392b";i="⚠️";d="Consumir con urgencia";}
+  } else if(t==="Dulce"||t==="Generoso"){
+    if(age<3){s="Joven";c="#5b9bd5";i="⏳";d="Puede mejorar con tiempo";}
+    else if(age<15){s="Óptimo";c="#27ae60";i="✅";d="Momento ideal";}
+    else{s="Complejo";c="#9b59b6";i="👑";d="Gran complejidad, memorable";}
+  } else{s="?";c="#7a6a50";i="❓";d="";}
+  return{status:s,color:c,icon:i,detail:d,age};
+}
+
+// ── AI ────────────────────────────────────────────────────────────────────────
+async function aiCall(prompt, system, imgB64, imgType) {
+  const content = [];
+  if(imgB64) content.push({type:"image",source:{type:"base64",media_type:imgType||"image/jpeg",data:imgB64}});
+  content.push({type:"text",text:prompt});
+  const res = await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":apiKey,
+      "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,
+      ...(system?{system}:{}),messages:[{role:"user",content}]})
+  });
+  const d = await res.json();
+  if(d.error) throw new Error(d.error.message);
+  return d.content?.map(b=>b.text||"").join("")||"";
+}
+
+async function handleImage(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    currentImagen = ev.target.result;
+    const box = document.getElementById("photoBox");
+    box.innerHTML = `<img src="${currentImagen}">`;
+    box.style.borderColor = "#2e1f08";
+    const msg = document.getElementById("labelMsg");
+    const iaS = document.getElementById("iaStatus");
+    if(!apiKey){ msg.innerHTML="<span style='color:#e8c97a'>Foto guardada. Activa la IA para autorellenar.</span>"; return; }
+    msg.innerHTML="<span class='spinner'></span><span style='color:#c9a84c'>Reconociendo etiqueta...</span>";
+    iaS.textContent="";
+    try {
+      const b64 = ev.target.result.split(",")[1];
+      const mtype = file.type||"image/jpeg";
+      const raw = await aiCall(
+        `Analiza esta etiqueta de vino y extrae los datos reales escritos en ella.
+Responde ÚNICAMENTE con este JSON, sin explicaciones ni markdown:
+{"nombre":"","bodega":"","añada":"","tipo":"Tinto","uva":"","region":"","pais":"España","notas":""}
+El tipo debe ser uno de: Tinto, Blanco, Rosado, Espumoso, Dulce, Generoso, Otro.
+Rellena con los textos exactos de la etiqueta. Si no ves un dato deja el campo vacío.`,
+        "Eres un experto sumiller español. Analiza etiquetas de vino. Responde SOLO con JSON válido, sin markdown.",
+        b64, mtype
+      );
+      const data = JSON.parse(raw.replace(/```json|```/g,"").trim());
+      // Limpiar "Ej:" si aparece
+      Object.keys(data).forEach(k=>{ if(typeof data[k]==="string") data[k]=data[k].replace(/^Ej:\s*/i,"").trim(); });
+      if(data.nombre) document.getElementById("fNombre").value=data.nombre;
+      if(data.bodega) document.getElementById("fBodega").value=data.bodega;
+      if(data.añada) document.getElementById("fAñada").value=data.añada;
+      if(data.tipo && TIPOS.includes(data.tipo)) document.getElementById("fTipo").value=data.tipo;
+      if(data.uva) document.getElementById("fUva").value=data.uva;
+      if(data.region) document.getElementById("fRegion").value=data.region;
+      if(data.pais) document.getElementById("fPais").value=data.pais;
+      if(data.notas) document.getElementById("fNotas").value=data.notas;
+      box.style.borderColor="#27ae60";
+      msg.innerHTML="<span style='color:#27ae60'>✅ ¡Campos rellenados! Revisa y completa si falta algo.</span>";
+      iaS.textContent="· IA ✓";
+      updateRecPreview();
+    } catch(err) {
+      msg.innerHTML="<span style='color:#e8c97a'>⚠️ La IA ha rellenado lo que ha podido. Completa el resto.</span>";
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function handlePrice() {
+  const nombre = document.getElementById("fNombre").value.trim();
+  if(!nombre){ alert("Escribe primero el nombre del vino"); return; }
+  if(!apiKey){ alert("Activa primero la IA con tu API key"); return; }
+  const btn = document.getElementById("btnBuscarPrecio");
+  const res = document.getElementById("priceResult");
+  btn.innerHTML="<span class='spinner'></span> Buscando precio en tiendas españolas...";
+  btn.disabled=true; res.style.display="none";
+  try {
+    const bodega = document.getElementById("fBodega").value;
+    const añada = document.getElementById("fAñada").value;
+    const q = [nombre,bodega,añada].filter(Boolean).join(" ");
+    const raw = await aiCall(
+      `Busca el precio actual de este vino en tiendas online españolas (Vinissimus, Bodeboca, Todovino, Decántalo, El Corte Inglés vinos):
+"${q}"
+Responde SOLO con este JSON:
+{"precio_min":0,"precio_max":0,"precio_medio":0,"encontrado":false,"notas":""}
+Precios en euros. Si no hay datos exactos, estima según bodega/región y pon encontrado:false.`,
+      "Eres un experto en vinos españoles. Responde SOLO con JSON válido, sin markdown."
+    );
+    const data = JSON.parse(raw.replace(/```json|```/g,"").trim());
+    if(data.precio_medio>0) document.getElementById("fPrecioEst").value=data.precio_medio;
+    res.style.display="block";
+    if(data.encontrado) res.innerHTML=`<span style="color:#5b9bd5">✅ ${data.precio_min}€ – ${data.precio_max}€ · Media: <strong>${data.precio_medio}€</strong></span> <span style="color:#7a6a50">${data.notas||""}</span>`;
+    else res.innerHTML=`<span style="color:#e8c97a">📊 Estimación: ~${data.precio_medio}€</span> <span style="color:#7a6a50">${data.notas||""}</span>`;
+  } catch(err) { res.style.display="block"; res.innerHTML=`<span style="color:#c0392b">Error: ${err.message}</span>`; }
+  btn.innerHTML="🔍 Buscar precio con IA"; btn.disabled=false;
+}
+
+// ── STARS ─────────────────────────────────────────────────────────────────────
+function renderStarsInput() {
+  const c = document.getElementById("starsInput"); if(!c) return;
+  c.innerHTML="";
+  for(let i=1;i<=5;i++){
+    const s=document.createElement("span");
+    s.className="star"; s.textContent="★";
+    s.style.color=i<=currentPuntuacion?"#c9a84c":"#6a5020";
+    s.onclick=()=>{currentPuntuacion=i;renderStarsInput();};
+    c.appendChild(s);
+  }
+}
+function starsHtml(v,size=14){
+  let h="";
+  for(let i=1;i<=5;i++) h+=`<span style="color:${i<=v?"#c9a84c":"#6a5020"};font-size:${size}px">★</span>`;
+  return h;
+}
+
+// ── CANTIDAD ──────────────────────────────────────────────────────────────────
+function changeCantidad(d) {
+  currentCantidad = Math.max(0, currentCantidad+d);
+  document.getElementById("cantidadNum").textContent=currentCantidad;
+  const lbl=document.getElementById("cantidadLabel");
+  if(currentCantidad===0){lbl.textContent="⚠️ Sin stock";lbl.style.color="#c0392b";}
+  else if(currentCantidad<=2){lbl.textContent="🔔 Stock bajo";lbl.style.color="#e8c97a";}
+  else if(currentCantidad<=6){lbl.textContent="✅ Stock normal";lbl.style.color="#27ae60";}
+  else{lbl.textContent="✅ Buen stock";lbl.style.color="#27ae60";}
+}
+
+// ── REC PREVIEW ───────────────────────────────────────────────────────────────
+function updateRecPreview() {
+  const tipo=document.getElementById("fTipo")?.value;
+  const añada=document.getElementById("fAñada")?.value;
+  const p=document.getElementById("recPreview"); if(!p) return;
+  const rec=calcRec(tipo,añada);
+  if(rec){
+    p.style.display="block"; p.style.background=rec.color+"22";
+    p.style.border=`1px solid ${rec.color}44`; p.style.color=rec.color;
+    p.textContent=`${rec.icon} ${rec.status} · ${rec.detail}`;
+  } else { p.style.display="none"; }
+}
+
+// ── VINO FORM ─────────────────────────────────────────────────────────────────
+function openNew() {
+  editId=null; currentCantidad=1; currentPuntuacion=0; currentImagen="";
+  document.getElementById("mVinoTitle").textContent="Añadir vino";
+  document.querySelector("#mVino .btn-gold").textContent="Añadir a la bodega";
+  ["fNombre","fBodega","fAñada","fUva","fRegion","fNotas","fPosicion","fPrecio","fPrecioEst"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value="";
+  });
+  document.getElementById("fTipo").value="Tinto";
+  document.getElementById("fPais").value="España";
+  document.getElementById("fFecha").value="";
+  document.getElementById("fVinoteca").value="";
+  document.getElementById("cantidadNum").textContent="1";
+  document.getElementById("cantidadLabel").textContent="✅ Stock normal";
+  document.getElementById("cantidadLabel").style.color="#27ae60";
+  document.getElementById("photoBox").innerHTML='<span style="font-size:26px">📷</span><span>Subir foto</span>';
+  document.getElementById("photoBox").style.borderColor="#2e1f08";
+  document.getElementById("labelMsg").textContent=apiKey?"Sube una foto y la IA rellenará los campos solos.":"Sube una foto (activa la IA para autorellenar).";
+  document.getElementById("iaStatus").textContent="";
+  document.getElementById("priceResult").style.display="none";
+  document.getElementById("recPreview").style.display="none";
+  // Populate vinotecas select
+  const sel=document.getElementById("fVinoteca");
+  sel.innerHTML='<option value="">— Sin asignar —</option>';
+  vinotecas.forEach(vt=>{ const o=document.createElement("option"); o.value=vt.nombre; o.textContent=vt.nombre; sel.appendChild(o); });
+  renderStarsInput();
+  openModal("mVino");
+}
+
+function openEdit(vino) {
+  editId=vino.id;
+  currentCantidad=parseInt(vino.cantidad)||0;
+  currentPuntuacion=vino.puntuacion||0;
+  currentImagen=vino.imagen||"";
+  document.getElementById("mVinoTitle").textContent="Editar vino";
+  document.querySelector("#mVino .btn-gold").textContent="Guardar cambios";
+  document.getElementById("fNombre").value=vino.nombre||"";
+  document.getElementById("fBodega").value=vino.bodega||"";
+  document.getElementById("fAñada").value=vino.añada||"";
+  document.getElementById("fTipo").value=vino.tipo||"Tinto";
+  document.getElementById("fUva").value=vino.uva||"";
+  document.getElementById("fRegion").value=vino.region||"";
+  document.getElementById("fPais").value=vino.pais||"España";
+  document.getElementById("fVinoteca").value=vino.vinoteca||"";
+  document.getElementById("fPosicion").value=vino.posicion||"";
+  document.getElementById("fPrecio").value=vino.precio||"";
+  document.getElementById("fPrecioEst").value=vino.precio_est||"";
+  document.getElementById("fFecha").value=vino.fecha_compra||"";
+  document.getElementById("fNotas").value=vino.notas||"";
+  document.getElementById("cantidadNum").textContent=currentCantidad;
+  changeCantidad(0);
+  const pb=document.getElementById("photoBox");
+  if(currentImagen){ pb.innerHTML=`<img src="${currentImagen}">`; pb.style.borderColor="#27ae60"; }
+  else{ pb.innerHTML='<span style="font-size:26px">📷</span><span>Subir foto</span>'; pb.style.borderColor="#2e1f08"; }
+  // Populate vinotecas select
+  const sel=document.getElementById("fVinoteca");
+  sel.innerHTML='<option value="">— Sin asignar —</option>';
+  vinotecas.forEach(vt=>{ const o=document.createElement("option"); o.value=vt.nombre; o.textContent=vt.nombre; if(vt.nombre===vino.vinoteca) o.selected=true; sel.appendChild(o); });
+  document.getElementById("priceResult").style.display="none";
+  renderStarsInput(); updateRecPreview();
+  openModal("mVino");
+}
+
+function saveVino() {
+  const nombre=document.getElementById("fNombre").value.trim();
+  if(!nombre){ alert("El nombre es obligatorio"); return; }
+  const precio=document.getElementById("fPrecio").value||document.getElementById("fPrecioEst").value;
+  const entry={
+    id: editId||Date.now().toString(),
+    nombre, bodega:document.getElementById("fBodega").value,
+    añada:document.getElementById("fAñada").value,
+    tipo:document.getElementById("fTipo").value,
+    uva:document.getElementById("fUva").value,
+    region:document.getElementById("fRegion").value,
+    pais:document.getElementById("fPais").value,
+    vinoteca:document.getElementById("fVinoteca").value,
+    posicion:document.getElementById("fPosicion").value,
+    precio, precio_est:document.getElementById("fPrecioEst").value,
+    fecha_compra:document.getElementById("fFecha").value,
+    notas:document.getElementById("fNotas").value,
+    cantidad:currentCantidad, puntuacion:currentPuntuacion,
+    imagen:currentImagen, estado:editId?(vinos.find(v=>v.id===editId)?.estado||"activo"):"activo",
+    regalo_para:editId?(vinos.find(v=>v.id===editId)?.regalo_para||""):"",
+    fecha_consumo:editId?(vinos.find(v=>v.id===editId)?.fecha_consumo||""):"",
+  };
+  if(editId) vinos=vinos.map(v=>v.id===editId?entry:v);
+  else vinos.push(entry);
+  save(); closeModal("mVino"); render();
+}
+
+function askDel(id){ delId=id; openModal("mDel"); }
+function confirmDel(){ vinos=vinos.filter(v=>v.id!==delId); save(); closeModal("mDel"); closeModal("mDetail"); render(); }
+
+function setEstado(id,estado,extra={}){
+  vinos=vinos.map(v=>v.id===id?{...v,estado,...extra}:v);
+  save(); closeModal("mDetail"); render();
+}
+
+// ── DETAIL MODAL ──────────────────────────────────────────────────────────────
+function openDetail(vino) {
+  detailVino=vino;
+  const rec=calcRec(vino.tipo,vino.añada);
+  const precio=parseFloat(vino.precio||vino.precio_est||0);
+  const qty=parseInt(vino.cantidad)||0;
+  const qC=qty===0?"#c0392b":qty<=2?"#e8c97a":"#27ae60";
+  const qBg=qty===0?"#2a0a0a":qty<=2?"#2a1a00":"#0a1a0a";
+  let recHtml="";
+  if(rec) recHtml=`<div class="rec-bar" style="background:${rec.color}11;border:1px solid ${rec.color}33;color:${rec.color};margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+      <span style="background:${rec.color}22;border:1px solid ${rec.color}55;font-size:10px;font-weight:700;padding:2px 9px;border-radius:10px;text-transform:uppercase">${rec.icon} ${rec.status}</span>
+      <span style="font-size:11px;color:#7a6a50">${rec.age} años</span>
+    </div>
+    <div style="font-size:12px">${rec.detail}</div>
+    ${apiKey?`<button onclick="handleSumiller()" style="margin-top:8px;background:transparent;border:1px solid #6a5020;color:#e8c97a;border-radius:4px;padding:5px 13px;font-size:11px;font-family:Georgia,serif" id="btnSumiller">🤖 Consultar sumiller IA</button>`:""}
+  </div>`;
+  const rows=[["Añada",vino.añada],["Uva",vino.uva],["Región",vino.region],["País",vino.pais],
+    ["Vinoteca",vino.vinoteca],["Posición",vino.posicion],
+    ["Precio/bot.",precio>0?`${precio.toFixed(2)} €`:""],
+    ["Valor total",precio>0&&qty>0?`${(precio*qty).toFixed(2)} €`:""],
+    ["Fecha compra",vino.fecha_compra],
+    vino.estado==="regalo"?["Regalado a",vino.regalo_para]:null,
+    vino.estado==="consumido"?["Consumido",vino.fecha_consumo]:null,
+  ].filter(r=>r&&r[1]);
+  document.getElementById("mDetailContent").innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+          <span class="badge" style="background:${TCOLOR[vino.tipo]||"#555"}">${vino.tipo}</span>
+          ${vino.estado==="consumido"?`<span style="font-size:10px;color:#5b9bd5;border:1px solid #5b9bd533;padding:1px 7px;border-radius:10px">🥂 Consumido</span>`:""}
+          ${vino.estado==="regalo"?`<span style="font-size:10px;color:#9b59b6;border:1px solid #9b59b633;padding:1px 7px;border-radius:10px">🎁 Regalado</span>`:""}
+          <span style="font-size:12px;font-weight:700;color:${qC};background:${qBg};border:1px solid ${qC}44;border-radius:10px;padding:2px 10px">
+            ${qty===0?"⚠️ Sin stock":`📦 ${qty} botella${qty!==1?"s":""}`}
+          </span>
+        </div>
+        <h2 style="color:#f0e6cc;font-size:17px;margin:0 0 2px">${vino.nombre}</h2>
+        ${vino.bodega?`<div style="color:#c9a84c;font-size:13px">${vino.bodega}</div>`:""}
+      </div>
+      <button onclick="closeModal('mDetail')" style="background:transparent;border:none;color:#7a6a50;font-size:24px;line-height:1;padding:0">×</button>
+    </div>
+    ${vino.imagen?`<img src="${vino.imagen}" style="width:100%;max-height:160px;object-fit:cover;border-radius:6px;margin-bottom:12px;opacity:0.9">`:""}
+    ${recHtml}
+    <div id="sumillerBox"></div>
+    <div class="grid2" style="gap:6px 16px;margin-bottom:12px">
+      ${rows.map(([k,x])=>`<div><div style="font-size:9px;color:#6a5020;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">${k}</div><div style="font-size:12px;color:#f0e6cc">${x}</div></div>`).join("")}
+    </div>
+    ${vino.puntuacion>0?`<div style="margin-bottom:12px"><div style="font-size:9px;color:#6a5020;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Puntuación</div>${starsHtml(vino.puntuacion,18)}</div>`:""}
+    ${vino.notas?`<div style="background:#080604;border-radius:5px;padding:10px 13px;font-size:12px;color:#8a7a60;line-height:1.6;border-left:2px solid #6a5020;margin-bottom:14px">${vino.notas}</div>`:""}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-gold" style="flex:1" onclick="openEdit(detailVino);closeModal('mDetail')">✏️ Editar</button>
+      ${vino.estado==="activo"?`
+        <button class="btn-blue" onclick="const f=prompt('Fecha de consumo:')||new Date().toISOString().slice(0,10);setEstado('${vino.id}','consumido',{fecha_consumo:f})">🥂</button>
+        <button class="btn-purple" onclick="const p=prompt('¿Para quién es el regalo?');if(p)setEstado('${vino.id}','regalo',{regalo_para:p})">🎁</button>
+      `:`<button class="btn-ghost" onclick="setEstado('${vino.id}','activo',{})">↩ Restaurar</button>`}
+      <button class="btn-red" onclick="askDel('${vino.id}')">🗑</button>
+    </div>
+  `;
+  openModal("mDetail");
+}
+
+async function handleSumiller() {
+  if(!apiKey||!detailVino) return;
+  const btn=document.getElementById("btnSumiller"); if(!btn) return;
+  btn.innerHTML="<span class='spinner'></span> Consultando..."; btn.disabled=true;
+  try {
+    const raw=await aiCall(
+      `Recomendación detallada para: ${JSON.stringify({nombre:detailVino.nombre,bodega:detailVino.bodega,tipo:detailVino.tipo,añada:detailVino.añada,region:detailVino.region,uva:detailVino.uva})}
+Responde SOLO con este JSON:
+{"ventana_optima":"","temperatura":"","decantacion":"","maridajes":[],"potencial":"","consejo":""}`,
+      "Eres un sumiller experto español. Responde SOLO con JSON válido, sin markdown."
+    );
+    const d=JSON.parse(raw.replace(/```json|```/g,"").trim());
+    const box=document.getElementById("sumillerBox");
+    box.innerHTML=`<div style="background:#0a0f0a;border:1px solid #1a4a2a;border-radius:6px;padding:12px 14px;margin-bottom:12px;font-size:12px">
+      <div style="color:#27ae60;font-weight:700;margin-bottom:8px;font-size:11px;letter-spacing:1px;text-transform:uppercase">🍷 Sumiller IA</div>
+      ${d.ventana_optima?`<div style="margin-bottom:4px"><span style="color:#6a5020">Ventana: </span><span style="color:#f0e6cc">${d.ventana_optima}</span></div>`:""}
+      ${d.temperatura?`<div style="margin-bottom:4px"><span style="color:#6a5020">Temperatura: </span><span style="color:#f0e6cc">${d.temperatura}</span></div>`:""}
+      ${d.decantacion?`<div style="margin-bottom:4px"><span style="color:#6a5020">Decantación: </span><span style="color:#f0e6cc">${d.decantacion}</span></div>`:""}
+      ${d.maridajes?.length?`<div style="margin-bottom:4px"><span style="color:#6a5020">Maridajes: </span><span style="color:#f0e6cc">${d.maridajes.join(", ")}</span></div>`:""}
+      ${d.consejo?`<div style="margin-top:8px;color:#e8c97a;font-style:italic;line-height:1.5">${d.consejo}</div>`:""}
+    </div>`;
+    btn.style.display="none";
+  } catch(err) { btn.innerHTML="🤖 Consultar sumiller IA"; btn.disabled=false; }
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function setView(v) {
+  currentView=v;
+  ["bodega","lista","vinotecas","stats"].forEach(k=>{
+    document.getElementById("view"+k.charAt(0).toUpperCase()+k.slice(1)).style.display=k===v?"":"none";
+  });
+  document.querySelectorAll(".nav-btn").forEach(b=>{
+    b.classList.toggle("active", b.textContent.toLowerCase()===v||
+      (v==="bodega"&&b.textContent==="Bodega")||(v==="lista"&&b.textContent==="Lista")||
+      (v==="vinotecas"&&b.textContent==="Vinotecas")||(v==="stats"&&b.textContent==="Stats"));
+  });
+  render();
+}
+
+function render() {
+  renderStats();
+  if(currentView==="bodega") renderBodega();
+  else if(currentView==="lista") renderLista();
+  else if(currentView==="vinotecas") renderVinotecas();
+  else if(currentView==="stats") renderStatsView();
+}
+
+function renderStats() {
+  const activos=vinos.filter(v=>(v.estado||"activo")==="activo");
+  const bots=activos.reduce((s,v)=>s+(parseInt(v.cantidad)||0),0);
+  const val=activos.reduce((s,v)=>s+parseFloat(v.precio||v.precio_est||0)*(parseInt(v.cantidad)||0),0);
+  const rated=activos.filter(v=>v.puntuacion>0);
+  const avg=rated.length?(rated.reduce((s,v)=>s+v.puntuacion,0)/rated.length).toFixed(1):"—";
+  document.getElementById("statsBar").innerHTML=[
+    ["🍾","Referencias",activos.length],["📦","Botellas",bots],
+    ["💰","Valor",val>0?`${val.toFixed(0)}€`:"—"],["⭐","Media",avg],
+    ["🥂","Consumidos",vinos.filter(v=>v.estado==="consumido").length],
+    ["🎁","Regalados",vinos.filter(v=>v.estado==="regalo").length],
+  ].map(([i,l,v])=>`<div class="stat-card"><div style="font-size:10px;color:#7a6a50;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">${i} ${l}</div><div style="font-size:19px;color:#c9a84c;font-weight:bold">${v}</div></div>`).join("");
+}
+
+function qtyHtml(q) {
+  const c=q===0?"#c0392b":q<=2?"#e8c97a":"#27ae60";
+  const bg=q===0?"#2a0a0a":q<=2?"#2a1a00":"#0a1a0a";
+  return `<span style="background:${bg};color:${c};border:1px solid ${c}44;border-radius:10px;padding:1px 8px;font-size:10px;font-weight:700">${q===0?"Sin stock":"×"+q}</span>`;
+}
+
+function renderBodega() {
+  const el=document.getElementById("viewBodega");
+  const activos=vinos.filter(v=>(v.estado||"activo")===filterEst);
+  const filtered=activos.filter(v=>{
+    const q=searchQ.toLowerCase();
+    const ms=!q||[v.nombre,v.bodega,v.region,v.uva,v.pais].join(" ").toLowerCase().includes(q);
+    return ms&&(filterTipo==="Todos"||v.tipo===filterTipo)&&(filterVt==="Todas"||v.vinoteca===filterVt);
+  });
+  const vtOpts=vinotecas.map(vt=>`<option${filterVt===vt.nombre?" selected":""}>${vt.nombre}</option>`).join("");
+  let cards=filtered.length===0
+    ?`<div style="text-align:center;padding:60px 20px;color:#7a6a50"><div style="font-size:52px;margin-bottom:12px">🍾</div><div>${vinos.length===0?"Tu bodega está vacía. ¡Añade tu primer vino!":"Sin resultados para esa búsqueda."}</div></div>`
+    :`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">${
+      filtered.map(v=>{
+        const rec=calcRec(v.tipo,v.añada);
+        const precio=parseFloat(v.precio||v.precio_est||0);
+        const qty=parseInt(v.cantidad)||0;
+        return `<div class="card" style="border-left-color:${TCOLOR[v.tipo]||"#555"}" onclick="openDetail(vinos.find(x=>x.id==='${v.id}'))">
+          ${v.imagen?`<img src="${v.imagen}" style="width:100%;height:75px;object-fit:cover;border-radius:4px;margin-bottom:9px;opacity:0.85">`:""}
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+            <span class="badge" style="background:${TCOLOR[v.tipo]||"#555"}">${v.tipo}</span>
+            ${qtyHtml(qty)}
+          </div>
+          <div style="font-size:14px;font-weight:bold;color:#f0e6cc;margin-bottom:2px;line-height:1.3">${v.nombre||"Sin nombre"}</div>
+          ${v.bodega?`<div style="font-size:11px;color:#c9a84c;margin-bottom:2px">${v.bodega}</div>`:""}
+          <div style="font-size:11px;color:#7a6a50;margin-bottom:7px">${[v.añada,v.region].filter(Boolean).join(" · ")||"&nbsp;"}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <div>${starsHtml(v.puntuacion,12)}</div>
+            ${precio>0?`<span style="font-size:11px;color:#e8c97a;font-weight:bold">${(precio*qty).toFixed(0)}€</span>`:""}
+          </div>
+          ${rec?`<div style="font-size:10px;color:${rec.color};display:flex;gap:4px"><span>${rec.icon}</span><span style="font-weight:600">${rec.status}</span>${v.añada?`<span style="color:#7a6a50">· ${rec.age}a</span>`:""}</div>`:""}
+          ${v.vinoteca?`<div style="font-size:10px;color:#7a6a50;margin-top:4px">📍 ${v.vinoteca}${v.posicion?" · "+v.posicion:""}</div>`:""}
+        </div>`;
+      }).join("")
+    }</div>`;
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <input placeholder="Buscar vino, bodega, uva..." value="${searchQ}" oninput="searchQ=this.value;renderBodega()" style="flex:1;min-width:150px">
+      <select onchange="filterTipo=this.value;renderBodega()" style="width:auto">
+        <option${filterTipo==="Todos"?" selected":""}>Todos</option>
+        ${TIPOS.map(t=>`<option${filterTipo===t?" selected":""}>${t}</option>`).join("")}
+      </select>
+      <select onchange="filterVt=this.value;renderBodega()" style="width:auto">
+        <option${filterVt==="Todas"?" selected":""}>Todas</option>${vtOpts}
+      </select>
+      <div style="display:flex;background:#130e07;border:1px solid #2e1f08;border-radius:5px;overflow:hidden">
+        ${[["activo","🍾"],["consumido","🥂"],["regalo","🎁"]].map(([e,ic])=>`<button onclick="filterEst='${e}';renderBodega()" style="background:${filterEst===e?"#c9a84c":"transparent"};color:${filterEst===e?"#000":"#8a7a60"};border:none;padding:7px 12px;font-size:14px">${ic}</button>`).join("")}
+      </div>
+      <button class="btn-gold" onclick="openNew()">+ Añadir</button>
+    </div>
+    ${cards}`;
+}
+
+function renderLista() {
+  const el=document.getElementById("viewLista");
+  const activos=vinos.filter(v=>(v.estado||"activo")==="activo");
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="color:#c9a84c;font-size:15px">Lista · ${activos.length} referencias · ${activos.reduce((s,v)=>s+(parseInt(v.cantidad)||0),0)} botellas</h2>
+      <button class="btn-gold" onclick="openNew()">+ Añadir</button>
+    </div>
+    <div style="background:#130e07;border:1px solid #2e1f08;border-radius:7px;overflow:auto">
+      <table>
+        <thead><tr style="border-bottom:1px solid #2e1f08">
+          ${["","Vino","Tipo","Añada","Uva","Vinoteca","Uds.","€/bot","Valor","★",""].map(h=>`<th>${h}</th>`).join("")}
+        </tr></thead>
+        <tbody>
+          ${vinos.length===0?`<tr><td colspan="11" style="text-align:center;color:#7a6a50;padding:32px">Sin vinos aún</td></tr>`
+          :vinos.map((v,i)=>{
+            const p=parseFloat(v.precio||v.precio_est||0);
+            const q=parseInt(v.cantidad)||0;
+            const est=v.estado||"activo";
+            const qC=q===0?"#c0392b":q<=2?"#e8c97a":"#27ae60";
+            return `<tr onclick="openDetail(vinos.find(x=>x.id==='${v.id}'))" style="opacity:${est!=="activo"?0.5:1};background:${i%2===0?"transparent":"rgba(255,255,255,0.015)"}">
+              <td>${v.imagen?`<img src="${v.imagen}" style="width:28px;height:28px;object-fit:cover;border-radius:3px">`:"🍷"}</td>
+              <td style="color:#f0e6cc;font-weight:bold;min-width:130px">${v.nombre}<br><span style="font-size:10px;color:#c9a84c;font-weight:normal">${v.bodega||""}</span></td>
+              <td><span class="badge" style="background:${TCOLOR[v.tipo]||"#555"}">${v.tipo}</span></td>
+              <td style="color:#7a6a50">${v.añada||""}</td>
+              <td style="color:#7a6a50;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.uva||""}</td>
+              <td style="color:#7a6a50">${v.vinoteca||""}</td>
+              <td><span style="background:${q===0?"#2a0a0a":q<=2?"#2a1a00":"#0a1a0a"};color:${qC};border:1px solid ${qC}44;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700">${q}</span></td>
+              <td style="color:${p>0?"#e8c97a":"#7a6a50"}">${p>0?p.toFixed(0)+"€":"—"}</td>
+              <td style="color:${p>0&&q>0?"#e8c97a":"#7a6a50"};font-weight:bold">${p>0&&q>0?(p*q).toFixed(0)+"€":"—"}</td>
+              <td>${starsHtml(v.puntuacion,11)}</td>
+              <td>${est==="consumido"?"🥂":est==="regalo"?"🎁":"✅"}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderVinotecas() {
+  const el=document.getElementById("viewVinotecas");
+  const activos=vinos.filter(v=>(v.estado||"activo")==="activo");
+  const cards=vinotecas.length===0
+    ?`<div style="text-align:center;padding:60px 20px;color:#7a6a50"><div style="font-size:48px;margin-bottom:12px">🗄️</div><div>Añade tus vinotecas: armario, bodega sótano, nevera...</div></div>`
+    :`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px">${
+      vinotecas.map(vt=>{
+        const vs=activos.filter(v=>v.vinoteca===vt.nombre);
+        const bots=vs.reduce((s,v)=>s+(parseInt(v.cantidad)||0),0);
+        const val=vs.reduce((s,v)=>s+parseFloat(v.precio||v.precio_est||0)*(parseInt(v.cantidad)||0),0);
+        return `<div style="background:#130e07;border:1px solid #2e1f08;border-radius:7px;padding:16px 18px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div><div style="font-size:15px;font-weight:bold;color:#f0e6cc;margin-bottom:2px">🗄️ ${vt.nombre}</div>
+              ${vt.descripcion?`<div style="font-size:11px;color:#7a6a50;margin-bottom:8px">${vt.descripcion}</div>`:""}
+            </div>
+            <button onclick="deleteVt('${vt.id}')" style="background:transparent;border:none;color:#7a6a50;font-size:20px;padding:0;cursor:pointer">×</button>
+          </div>
+          <div style="display:flex;gap:16px;margin:10px 0">
+            ${[["Ref.",vs.length],["Botellas",bots],["Valor",val>0?val.toFixed(0)+"€":"—"]].map(([l,x])=>`<div><div style="font-size:17px;color:#c9a84c;font-weight:bold">${x}</div><div style="font-size:9px;color:#7a6a50;text-transform:uppercase;letter-spacing:1px">${l}</div></div>`).join("")}
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            ${TIPOS.map(t=>{const n=vs.filter(v=>v.tipo===t).length;return n?`<span style="background:${TCOLOR[t]}33;color:${TCOLOR[t]};border:1px solid ${TCOLOR[t]}55;font-size:10px;padding:1px 7px;border-radius:10px">${t} ×${n}</span>`:""}).join("")}
+          </div>
+        </div>`;
+      }).join("")
+    }</div>`;
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="color:#c9a84c;font-size:15px">Mis Vinotecas</h2>
+      <button class="btn-gold" onclick="openModal('mVt')">+ Nueva</button>
+    </div>${cards}`;
+}
+
+function renderStatsView() {
+  const el=document.getElementById("viewStats");
+  const activos=vinos.filter(v=>(v.estado||"activo")==="activo");
+  const bots=activos.reduce((s,v)=>s+(parseInt(v.cantidad)||0),0);
+  const val=activos.reduce((s,v)=>s+parseFloat(v.precio||v.precio_est||0)*(parseInt(v.cantidad)||0),0);
+  el.innerHTML=`<div class="grid2" style="gap:14px">
+    <div style="background:#130e07;border:1px solid #2e1f08;border-radius:7px;padding:16px 18px">
+      <h3 style="color:#e8c97a;font-size:12px;margin:0 0 12px;text-transform:uppercase;letter-spacing:1px">Por tipo</h3>
+      ${TIPOS.map(t=>{const n=activos.filter(v=>v.tipo===t).length;const pct=activos.length?Math.round(n/activos.length*100):0;if(!n)return"";
+        return `<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:12px;color:#f0e6cc">${t}</span><span style="font-size:12px;color:#c9a84c">${n} (${pct}%)</span></div><div style="height:4px;background:#2e1f08;border-radius:2px"><div style="height:100%;width:${pct}%;background:${TCOLOR[t]};border-radius:2px"></div></div></div>`;
+      }).join("")}
+    </div>
+    <div style="background:#130e07;border:1px solid #2e1f08;border-radius:7px;padding:16px 18px">
+      <h3 style="color:#e8c97a;font-size:12px;margin:0 0 12px;text-transform:uppercase;letter-spacing:1px">Valor total</h3>
+      <div style="font-size:30px;color:#c9a84c;font-weight:bold;margin-bottom:4px">${val>0?val.toFixed(2)+" €":"Sin precios"}</div>
+      <div style="font-size:10px;color:#7a6a50;margin-bottom:12px">en ${bots} botellas activas</div>
+      ${vinotecas.map(vt=>{const vs=activos.filter(v=>v.vinoteca===vt.nombre);const v2=vs.reduce((s,v)=>s+parseFloat(v.precio||v.precio_est||0)*(parseInt(v.cantidad)||0),0);if(!v2)return"";
+        return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #2e1f08;font-size:12px"><span style="color:#f0e6cc">${vt.nombre}</span><span style="color:#e8c97a;font-weight:bold">${v2.toFixed(0)} €</span></div>`;
+      }).join("")}
+    </div>
+    <div style="background:#130e07;border:1px solid #2e1f08;border-radius:7px;padding:16px 18px">
+      <h3 style="color:#e8c97a;font-size:12px;margin:0 0 12px;text-transform:uppercase;letter-spacing:1px">Semáforo consumo</h3>
+      ${[["✅ Óptimo","#27ae60",v=>calcRec(v.tipo,v.añada)?.status==="Óptimo"],
+        ["🔔 Beber pronto","#c9a84c",v=>["Maduro","Bebible"].includes(calcRec(v.tipo,v.añada)?.status)],
+        ["⏳ Muy joven","#5b9bd5",v=>calcRec(v.tipo,v.añada)?.status?.includes("joven")],
+        ["⚠️ Pasado","#c0392b",v=>calcRec(v.tipo,v.añada)?.status?.includes("Pasado")],
+        ["❓ Sin añada","#7a6a50",v=>!v.añada],
+      ].map(([l,c,fn])=>{const n=activos.filter(fn).length;return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #2e1f08"><span style="font-size:12px;color:${c}">${l}</span><span style="font-size:18px;color:${c};font-weight:bold">${n}</span></div>`;}).join("")}
+    </div>
+    <div style="background:#130e07;border:1px solid #2e1f08;border-radius:7px;padding:16px 18px">
+      <h3 style="color:#e8c97a;font-size:12px;margin:0 0 12px;text-transform:uppercase;letter-spacing:1px">Stock por vino</h3>
+      <div style="max-height:220px;overflow-y:auto">
+        ${[...activos].sort((a,b)=>(parseInt(b.cantidad)||0)-(parseInt(a.cantidad)||0)).map(v=>{
+          const q=parseInt(v.cantidad)||0;const qC=q===0?"#c0392b":q<=2?"#e8c97a":"#27ae60";
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #2e1f08"><span style="font-size:11px;color:#f0e6cc;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${v.nombre}</span><span style="font-size:12px;font-weight:bold;color:${qC};background:${q===0?"#2a0a0a":q<=2?"#2a1a00":"#0a1a0a"};border:1px solid ${qC}44;border-radius:10px;padding:1px 8px;white-space:nowrap">×${q}</span></div>`;
+        }).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add("open"); }
+function closeModal(id){ document.getElementById(id).classList.remove("open"); }
+function closeIfOverlay(e,id){ if(e.target===document.getElementById(id)) closeModal(id); }
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+load();
+render();
+</script>
+</body>
+</html>
